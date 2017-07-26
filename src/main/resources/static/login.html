@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Spring Security Demo</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+
+<body ng-app="demoApp">
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" ng-click="isNavCollapsed = !isNavCollapsed" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Spring Security Demo</a>
+            </div>
+            <div class="collapse navbar-collapse" uib-collapse="isNavCollapsed">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container" ng-controller="MainController" style="margin-top: 51px;">
+        <div>Angular Form</div>
+        <form ng-submit="submit()" novalidate>
+            <span ng-if="csrfToken = '{{backendObject.csrfToken}}' "></span>
+            <div>
+                <label>User Name:</label>
+                <input type="text" ng-model="form.username" name="username" />
+            </div>
+            <div>
+                <label>Password:</label>
+                <input type="password" ng-model="form.password" name="password" />
+            </div>
+            <div>
+                <input type="submit" value="Sign In - Angular" />
+            </div>
+        </form>
+        <div>Regular Form</div>
+        <form action="/login" method="post" novalidate>
+            <input type="hidden" name="csrfToken" value="{{backendObject.csrfToken}}">
+            <div>
+                <label>User Name:</label>
+                <input type="text" name="username" />
+            </div>
+            <div>
+                <label>Password:</label>
+                <input type="password" name="password" />
+            </div>
+            <div>
+                <input type="submit" value="Sign In - Regular" />
+            </div>
+        </form>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-animate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-touch.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/1.0.3/angular-ui-router.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+    <script type="text/javascript">
+    angular.module('demoApp', [
+            'ui.router',
+            'ui.bootstrap'
+        ])
+        .config(function($httpProvider) {
+            $httpProvider.interceptors.push(function($q, $injector) {
+                var $rootScope = $injector.get('$rootScope');
+                return {
+                    request: function(config) {
+                        config.headers['X-CSRF-TOKEN'] = $rootScope.csrfToken;
+                        return config || $q.when(config);
+                    }
+                };
+            });
+        })
+        .run(['$rootScope', '$http', function($rootScope, $http) {
+            $http({
+                method: 'HEAD',
+                url: '/index.html'
+            }).then(function(res) {
+                $rootScope.csrfToken = res.headers()['x-csrf-token'];
+            });
+        }])
+        .controller('NavController', [
+            '$scope',
+            function($scope) {
+                $scope.isNavCollapsed = true;
+            }
+        ])
+        .controller('MainController', [
+            '$scope',
+            '$http',
+            '$window',
+            function(
+                $scope,
+                $http,
+                $window
+            ) {
+
+                $scope.form = {
+                    username: '',
+                    password: ''
+                };
+
+                $scope.submit = function() {
+                    $http({
+                        method: 'POST',
+                        url: '/login.html',
+                        transformRequest: function(obj) {
+                            var str = [];
+                            for (var p in obj)
+                                str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+                            return str.join("&");
+                        },
+                        data: $scope.form,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(function() {
+                        $window.location.href = '/index.html';
+                    });
+                };
+
+            }
+        ]);
+    </script>
+</body>
+
+</html>
